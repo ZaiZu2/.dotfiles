@@ -4,7 +4,7 @@ export RUSTUP_HOME="$XDG_DATA_HOME/rustup"
 is_installed_rust() { command -v cargo >/dev/null 2>&1; }
 
 install_rust() {
-  curl https://sh.rustup.rs -Sf | sh -s -- -y --no-modify-path
+  curl -fsSL https://sh.rustup.rs | bash -s -- -y --no-modify-path
   rustup override set stable || return 1
   rustup update stable || return 1
 
