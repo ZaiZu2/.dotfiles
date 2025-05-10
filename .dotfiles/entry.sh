@@ -24,21 +24,20 @@ parse_args() {
 }
 
 load_platform() {
-  OS="$(uname --kernel-name)" || return 1
-  ARCH="$(uname --machine)" || return 1
-
-  case "$OS" in
-  Linux)
-    source ./linux.sh
-    ;;
-  Darwin)
-    source ./darwin.sh
-    ;;
-  *)
+  OS="$(uname --kernel-name | tr '[:upper:]' '[:lower:]')" || return 1
+  if ! [[ $OS =~ ^(linux)|(darwin)$ ]]; then
     error "Platform unsupported: $OS"
-    return 1
-    ;;
-  esac
+    exit 1
+  fi
+
+  ARCH="$(uname --machine | tr '[:upper:]' '[:lower:]')" || return 1
+  if ! [[ $ARCH =~ ^(x86_64)|(arm64)$ ]]; then
+    error "Architecture unsupported: $ARCH"
+    exit 1
+  fi
+
+  info "Platform recognized as $OS-$ARCH"
+  source "./${OS}.sh"
 }
 
 open_sudo_session() {
@@ -57,11 +56,12 @@ open_sudo_session() {
     sudo -n true
     sleep 60
   done) &
-  sudo_session_pid=$!
-  trap 'kill "$sudo_session_pid" 2>/dev/null' EXIT HUP INT QUIT TERM
+  SUDO_SESSION_PID=$!
+  trap 'kill "$SUDO_SESSION_PID" 2>/dev/null' EXIT HUP INT QUIT TERM
 }
 
 install_tools() {
+  info "Installing tools..."
   for file in "./tools/"*; do
     source "$file"
 
@@ -74,7 +74,6 @@ install_tools() {
     fi
     # Skip excluded tools
     if [[ ${EXCLUDED+x} && ",$EXCLUDED," == *",$tool,"* ]]; then
-      warn "$tool" "Skipping - tool was excluded"
       continue
     fi
 
@@ -83,7 +82,11 @@ install_tools() {
     check_fn "$tool" "$is_installed_fn" "$install_fn" || return 1
 
     if ! "$is_installed_fn"; then
-      $install_fn && info "$tool" "Installed successfully"
+      if $install_fn; then
+        info "$tool" "Installed successfully"
+      else
+        error "$tool" "Error occured during installation"
+      fi
     else
       warn "$tool" "Skipping - tool is already installed"
     fi

@@ -5,7 +5,7 @@ is_installed_go() { command -v go >/dev/null 2>&1; }
 install_go() {
   rm -rf "$GOROOT"
 
-  curl -fsSL -o /tmp/go.tar.gz "https://go.dev/dl/go${GO_VERSION}.darwin-arm64.tar.gz" || return 1
+  curl -fsSL -o /tmp/go.tar.gz "https://go.dev/dl/go${GO_VERSION}.${OS}-${ARCH}.tar.gz" || return 1
   tar -C "$XDG_DATA_HOME" -xzf "/tmp/go.tar.gz"
   rm /tmp/go.tar.gz
 
