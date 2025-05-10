@@ -42,18 +42,38 @@ create_tool_template() {
   touch "$tool_path"
   # Tabs with `-EOF` allow to indent here-doc without injecting indentation into file
   cat >"./tools/${tool_name}.sh" <<-EOF
-	is_installed_${tool_name}() {
-	  command -v ${tool_name} >/dev/null 2>&1;
-	}
+		is_installed_${tool_name}() {
+		  command -v ${tool_name} >/dev/null 2>&1;
+		}
 
-	install_${tool_name}() {
-	  if [ "\$OS" = 'darwin' ]; then
-	    
-	  elif [ "\$OS" = 'linux' ]; then
-	    
-	  fi
+		install_${tool_name}() {
+		  if [ "\$OS" = 'darwin' ]; then
+
+		  elif [ "\$OS" = 'linux' ]; then
+
+		  fi
 	}
 	EOF
   chmod +x "$tool_path"
   info "$tool_name" "Template created at $tool_path"
+}
+
+get_shell() {
+  if [ -n "$BASH_VERSION" ]; then
+    echo bash
+  elif [ -n "$ZSH_VERSION" ]; then
+    echo zsh
+  else
+    error "Could not recognize shell"
+    exit 1
+  fi
+}
+
+get_script_dir() {
+  shell="$(get_shell)"
+  if [ "$shell" = 'bash' ]; then
+    dirname "$(realpath "${BASH_SOURCE[0]}")"
+  elif [ "$shell" = 'zsh' ]; then
+    dirname "$(realpath "${(%):-%x}"))"
+  fi
 }

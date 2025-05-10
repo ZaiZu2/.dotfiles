@@ -25,19 +25,26 @@ parse_args() {
 
 load_platform() {
   OS="$(uname --kernel-name | tr '[:upper:]' '[:lower:]')" || return 1
-  if ! [[ $OS =~ ^(linux)|(darwin)$ ]]; then
+
+  case "$OS" in
+  linux | darwin) ;;
+  *)
     error "Platform unsupported: $OS"
     exit 1
-  fi
+    ;;
+  esac
 
   ARCH="$(uname --machine | tr '[:upper:]' '[:lower:]')" || return 1
-  if ! [[ $ARCH =~ ^(x86_64)|(arm64)$ ]]; then
+  case "$ARCH" in
+  x86_64 | arm64) ;;
+  *)
     error "Architecture unsupported: $ARCH"
     exit 1
-  fi
+    ;;
+  esac
 
   info "Platform recognized as $OS-$ARCH"
-  source "./${OS}.sh"
+  source "$SCRIPT_DIR/$OS.sh"
 }
 
 open_sudo_session() {
@@ -62,7 +69,7 @@ open_sudo_session() {
 
 install_tools() {
   info "Installing tools..."
-  for file in "./tools/"*; do
+  for file in "$SCRIPT_DIR/tools/"*; do
     source "$file"
 
     basename="$(basename "$file")"
@@ -93,11 +100,22 @@ install_tools() {
   done
 }
 
+symlink_dotfiles() {
+  ls "$SCRIPT_DIR/files/dotfiles/"
+  for dotfile in "$SCRIPT_DIR/files/dotfiles/."*; do
+    ln -sf "$dotfile" "$HOME/$(basename "$dotfile")"
+  done
+  info "Symlinked dotfiles"
+}
+
 main() {
-  parse_args "$@" || return 1
-  load_platform || return 1
+  parse_args "$@" || return $?
+  SCRIPT_DIR="$(get_script_dir)"
+  load_platform || return $?
+
+  symlink_dotfiles
   open_sudo_session
-  init_pkg_mgr || return 1
+  init_pkg_mgr || return $?
   install_tools
 }
 
