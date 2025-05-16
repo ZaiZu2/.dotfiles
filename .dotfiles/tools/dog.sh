@@ -3,18 +3,19 @@ is_installed_dog() {
 }
 
 install_linux() {
-  echo "$SCRIPT_DIR/utils.sh"
-  source "$SCRIPT_DIR/utils.sh"
-  echo 'dog'
-  echo 'cat'
+  echo 'linux'
+  sleep 1
+  echo 'cat' && warn
+  sleep 1
   echo 'bat'
-  info 'poop' 'poop'
-  error 'poop' 'poop'
+  sleep 1
+  echo 'totallywrong' && fail 'shit, it got fucked' && return
+  sleep 3
 }
 
 install_darwin() {
 
-  echo 'dog'
+  echo 'darwin'
   echo 'cat'
   echo 'bat'
 }

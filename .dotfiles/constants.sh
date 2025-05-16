@@ -5,3 +5,7 @@ XDG_CACHE_HOME="$HOME/.cache"
 
 GO_VERSION="1.23.3"
 LUA_VERSION="5.2"
+
+LOGS_DIR="$SCRIPT_DIR/logs"
+
+CURR_TOOL='' # name of the tool currently being installed

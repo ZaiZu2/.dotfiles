@@ -1,6 +1,6 @@
 dog() {
-  echo 'dog'
-  echo 'cat'
+  echo 'dog' 
+  echo 'cat' && return 1
   echo 'bat'
 }
 

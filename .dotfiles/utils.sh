@@ -1,65 +1,80 @@
-info() {
+green() {
   if [ $# -ge 2 ]; then
     label=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-    echo -e "\033[1;32m[$label]\033[1;34m ${*:2}\033[0m"
+    echo -e "\033[1;32m$label\033[1;34m ${*:2}\033[0m"
   else
-    echo -e "\033[1;32m[INFO]\033[1;34m $1\033[0m"
+    echo -e "\033[1;32m$1\033[0m"
   fi
 }
 
-error() {
+blue() {
   if [ $# -ge 2 ]; then
     label=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-    echo -e "\033[1;31m[$label]\033[1;34m ${*:2}\033[0m"
+    echo -e "\033[1;34m$label\033[1;34m ${*:2}\033[0m"
   else
-    echo -e "\033[1;31m[ERROR]\033[1;34m $1\033[0m"
+    echo -e "\033[1;34m$1\033[0m"
   fi
 }
 
-warn() {
+red() {
   if [ $# -ge 2 ]; then
     label=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-    echo -e "\033[1;33m[$label]\033[1;34m ${*:2}\033[0m"
+    echo -e "\033[1;31m$label\033[1;34m ${*:2}\033[0m"
   else
-    echo -e "\033[1;33m[WARN]\033[1;34m $1\033[0m"
+    echo -e "\033[1;31m$1\033[0m"
   fi
 }
+
+yellow() {
+  if [ $# -ge 2 ]; then
+    label=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+    echo -e "\033[1;33m$label\033[1;34m ${*:2}\033[0m"
+  else
+    echo -e "\033[1;33m$1\033[0m"
+  fi
+}
+
+# green() {
+#   if [ $# -ge 2 ]; then
+#     label=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+#     echo -e "\033[1;32m[$label]\033[1;34m ${*:2}\033[0m"
+#   else
+#     echo -e "\033[1;32m[INFO]\033[1;34m $1\033[0m"
+#   fi
+# }
+#
+# red() {
+#   if [ $# -ge 2 ]; then
+#     label=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+#     echo -e "\033[1;31m[$label]\033[1;34m ${*:2}\033[0m"
+#   else
+#     echo -e "\033[1;31m[ERROR]\033[1;34m $1\033[0m"
+#   fi
+# }
+#
+# yellow() {
+#   if [ $# -ge 2 ]; then
+#     label=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+#     echo -e "\033[1;33m[$label]\033[1;34m ${*:2}\033[0m"
+#   else
+#     echo -e "\033[1;33m[WARN]\033[1;34m $1\033[0m"
+#   fi
+# }
 
 check_fn() {
   for fn in "${@:2}"; do
     if ! declare -f "$fn" >/dev/null; then
-      error "$1" "Function '$fn' does not exist"
+      red "$1" "Function '$fn' does not exist"
       return 1
     fi
   done
-}
-
-log_tool_block() {
-  local status
-  local status_file=$(mktemp)
-  {
-    "$@" 2>&1
-    echo $? > "$status_file"
-  } |
-    while IFS= read -r line; do
-      echo -e "\033[1;32m│\033[0m$line"
-    done
-
-  status=$(<"$status_file")
-  if [ "$status" -eq 0 ]; then
-    echo -e "\033[1;32m└──────────────────────────────────────────────────────────────────────────────────────\033[0m"
-  else
-    echo -e "\033[1;31m└──────────────────────────────────────────────────────────────────────────────────────\033[0m"
-  fi
-
-  return "$status"
 }
 
 create_tool_template() {
   tool_name=$1
   tool_path=$(realpath "./tools/$tool_name.sh")
   if [ -f "$tool_path" ]; then
-    error "$tool_name" "Template not created - tool already exists"
+    red "$tool_name" "Template not created - tool already exists"
     return 1
   fi
 
@@ -87,25 +102,5 @@ create_tool_template() {
 		}
 	EOF
   chmod +x "$tool_path"
-  info "$tool_name" "Template created at $tool_path"
-}
-
-get_shell() {
-  if [ -n "$BASH_VERSION" ]; then
-    echo bash
-  elif [ -n "$ZSH_VERSION" ]; then
-    echo zsh
-  else
-    error "Could not recognize shell"
-    exit 1
-  fi
-}
-
-get_script_dir() {
-  shell="$(get_shell)"
-  if [ "$shell" = 'bash' ]; then
-    dirname "$(realpath "${BASH_SOURCE[0]}")"
-  elif [ "$shell" = 'zsh' ]; then
-    dirname "$(realpath "${(%):-%x}"))"
-  fi
+  green "$tool_name" "Template created at $tool_path"
 }

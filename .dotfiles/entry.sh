@@ -1,4 +1,29 @@
-source utils.sh
+#!/bin/bash
+
+get_shell() {
+  if [ -n "$BASH_VERSION" ]; then
+    echo bash
+  elif [ -n "$ZSH_VERSION" ]; then
+    echo zsh
+  else
+    red "Could not recognize shell"
+    exit 1
+  fi
+}
+
+get_script_dir() {
+  shell="$(get_shell)"
+  if [ "$shell" = 'bash' ]; then
+    dirname "$(realpath "${BASH_SOURCE[0]}")"
+  elif [ "$shell" = 'zsh' ]; then
+    dirname "$(realpath "${(%):-%x}"))"
+  fi
+}
+SCRIPT_DIR="$(get_script_dir)"
+
+source "$SCRIPT_DIR/utils.sh"
+source "$SCRIPT_DIR/constants.sh"
+source "$SCRIPT_DIR/tool.sh"
 
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -20,7 +45,7 @@ parse_args() {
       shift
       ;;
     *)
-      error "Unknown option: $1"
+      red "Unknown option: $1"
       local did_error=true
       shift
       ;;
@@ -37,7 +62,7 @@ load_platform() {
   case "$OS" in
   linux | darwin) ;;
   *)
-    error "Platform unsupported: $OS"
+    red "Platform unsupported: $OS"
     exit 1
     ;;
   esac
@@ -46,12 +71,12 @@ load_platform() {
   case "$ARCH" in
   x86_64 | arm64) ;;
   *)
-    error "Architecture unsupported: $ARCH"
+    red "Architecture unsupported: $ARCH"
     exit 1
     ;;
   esac
 
-  info "Platform recognized as $OS-$ARCH"
+  green "Platform recognized as $OS-$ARCH"
   source "$SCRIPT_DIR/$OS.sh"
 }
 
@@ -59,11 +84,11 @@ open_sudo_session() {
   # Invalidate any cached credentials if they are incorrect
   if sudo --non-interactive true 2>/dev/null; then
     sudo --remove-timestamp
-    info "Provide admin credentials:"
+    green "Provide admin credentials:"
   fi
 
   if ! sudo --validate; then
-    error "This script requires admin rights"
+    red "This script requires admin rights"
     exit 1
   fi
 
@@ -75,50 +100,16 @@ open_sudo_session() {
   trap 'kill "$SUDO_SESSION_PID" 2>/dev/null' EXIT HUP INT QUIT TERM
 }
 
-install_tools() {
-  for file in "$SCRIPT_DIR/tools/"*; do
-    source "$file"
-
-    local filename="$(basename "$file")"
-    local tool="${filename%%.sh}"
-
-    # Iterate over select tools if --only was set
-    if [[ -n "${ONLY:-}" && ",$ONLY," != *",$tool,"* ]]; then
-      continue
-    fi
-    # Skip excluded tools
-    if [[ ${EXCLUDED+x} && ",$EXCLUDED," == *",$tool,"* ]]; then
-      continue
-    fi
-
-    local is_installed_fn="is_installed_$tool"
-    local install_fn="install_$tool"
-    check_fn "$tool" "$is_installed_fn" "$install_fn" || return 1
-
-    if ! "$is_installed_fn" || [ "$FORCE" = 'true' ]; then
-      info "$tool" "Installing..."
-      if log_tool_block "$install_fn"; then
-        info "$tool" "Installed successfully"
-      else
-        error "$tool" "Error occured during installation"
-      fi
-    else
-      warn "$tool" "Skipping - tool is already installed"
-    fi
-  done
-}
-
 symlink_dotfiles() {
   ls "$SCRIPT_DIR/files/dotfiles/"
   for dotfile in "$SCRIPT_DIR/files/dotfiles/."*; do
     ln -sf "$dotfile" "$HOME/$(basename "$dotfile")"
   done
-  info "Symlinked dotfiles"
+  green "Symlinked dotfiles"
 }
 
 main() {
   parse_args "$@" || return $?
-  SCRIPT_DIR="$(get_script_dir)"
   load_platform || return $?
 
   symlink_dotfiles

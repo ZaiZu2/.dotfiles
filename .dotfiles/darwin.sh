@@ -17,5 +17,5 @@ init_pkg_mgr() {
 install_font() {
   cp "$SCRIPT_DIR/files/font/"* /Library/Fonts
   chmod 644 /Library/Fonts/*
-  info "Installed fonts"
+  green "Installed fonts"
 }
