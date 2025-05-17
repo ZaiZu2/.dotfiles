@@ -21,9 +21,9 @@ get_script_dir() {
 }
 SCRIPT_DIR="$(get_script_dir)"
 
-source "$SCRIPT_DIR/utils.sh"
-source "$SCRIPT_DIR/constants.sh"
-source "$SCRIPT_DIR/tool.sh"
+source "utils.sh"
+source "constants.sh"
+source "tool.sh"
 
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -76,7 +76,7 @@ load_platform() {
     ;;
   esac
 
-  green "Platform recognized as $OS-$ARCH"
+  blue "Platform recognized as $OS-$ARCH"
   source "$SCRIPT_DIR/$OS.sh"
 }
 
@@ -84,7 +84,7 @@ open_sudo_session() {
   # Invalidate any cached credentials if they are incorrect
   if sudo --non-interactive true 2>/dev/null; then
     sudo --remove-timestamp
-    green "Provide admin credentials:"
+    blue "Provide admin credentials:"
   fi
 
   if ! sudo --validate; then
@@ -105,7 +105,7 @@ symlink_dotfiles() {
   for dotfile in "$SCRIPT_DIR/files/dotfiles/."*; do
     ln -sf "$dotfile" "$HOME/$(basename "$dotfile")"
   done
-  green "Symlinked dotfiles"
+  blue "Symlinked dotfiles"
 }
 
 main() {

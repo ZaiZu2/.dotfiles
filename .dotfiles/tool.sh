@@ -13,48 +13,27 @@ warn() {
   [ "$1" ] && yellow "$1"
 }
 
-parse_tool_line() {
-  # Special TOOL log which also carries the error code
-  if [[ $1 =~ ^([[:alnum:]]+)\;([[:digit:]]+)\;(.+)$ ]]; then
-    local _="${BASH_REMATCH[1]}"
-    local status_code="${BASH_REMATCH[2]}"
-    local message="${BASH_REMATCH[3]}"
-    if [ "$status_code" -eq 0 ]; then # INFO
-      echo -e "\033[1;32m┃$message\033[0m"
-    elif [ "$status_code" -eq 10 ]; then # WARN
-      echo -e "\033[1;33m┃$message\033[0m"
-    else # ERROR
-      echo -e "\033[1;31m┃$message\033[0m"
-    fi
-  # Special TOOL end log which means TOOL installation finished
-  # elif [[ $1 =~ ^[[:alnum:]]+\;END$ ]]; then
-
-  else
-    echo -e "\033[1;32m┃\033[0m$1"
-  fi
-}
-
-format_line() {
-  local status_code=$1
-  local message=$2
-  if [ $((status_code)) -eq 0 ]; then # INFO
-    echo -e "\033[1;32m┃$message\033[0m"
-  elif [ $((status_code)) -eq 10 ]; then # WARN
-    echo -e "\033[1;33m┃$message\033[0m"
-  else # ERROR
-    echo -e "\033[1;31m┃$message\033[0m"
-  fi
-}
-
 process_installation() {
+  format_line() {
+    local status_code=$1
+    local message=$2
+    if [ $((status_code)) -eq 0 ]; then # INFO
+      echo -e "\033[1;32m┃\033[0m$message"
+    elif [ $((status_code)) -eq 10 ]; then # WARN
+      echo -e "\033[1;33m┃\033[0m$message"
+    else # ERROR
+      echo -e "\033[1;31m┃\033[0m$message"
+    fi
+  }
+
   build_end() {
     local status_code="$(<"$CURR_TOOL_STATUS")"
     if [ $((status_code)) -eq 0 ]; then # INFO
-      green "┗━━━━━━━━━"
+      green "┗━━━━━━━━"
     elif [ $((status_code)) -eq 10 ]; then # WARN
-      yellow "┗━━━━━━━━━"
+      yellow "┗━━━━━━━━"
     else # ERROR
-      red "┗━━━━━━━━━"
+      red "┗━━━━━━━━"
     fi
 
   }
@@ -64,7 +43,7 @@ process_installation() {
 
   CURR_TOOL="$tool"
   CURR_TOOL_STATUS=$(mktemp) && echo 0 >"$CURR_TOOL_STATUS"
-  rm "$LOGS_DIR/$CURR_TOOL.log" &>/dev/null
+  rm -f "$LOGS_DIR/$CURR_TOOL.log" &>/dev/null
 
   local pipe=$(mktemp -u) && mkfifo "$pipe"
 
@@ -73,21 +52,22 @@ process_installation() {
     while IFS= read -r line; do
       local status=$(<"$CURR_TOOL_STATUS")
       format_line "$status" "$line"
-      # parse_tool_line "$line"
       echo "$line" >>"$LOGS_DIR/$CURR_TOOL.log"
     done <"$pipe"
   } &
-  local reader_pid=$!
+  local parser_pid=$!
 
-  blue "┏━━$tool━━━" ""
+  green "┏━━$tool━━━" ""
   # Foreground `install_*` function to which background process listens to
   {
     "$install_fn"
-  } >"$pipe"
-
-  wait $reader_pid
+  } >"$pipe" 2>&1
+  wait $parser_pid
   build_end
-  return "$(<"$CURR_TOOL_STATUS")"
+
+  local final_status=$(( $(<"$CURR_TOOL_STATUS") ))
+  rm -f "$pipe" "$CURR_TOOL_STATUS" &>/dev/null
+  return $final_status
 }
 
 install_tools() {

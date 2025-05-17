@@ -102,5 +102,5 @@ create_tool_template() {
 		}
 	EOF
   chmod +x "$tool_path"
-  green "$tool_name" "Template created at $tool_path"
+  blue "$tool_name" "Template created at $tool_path"
 }
